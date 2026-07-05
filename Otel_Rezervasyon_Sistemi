@@ -1,0 +1,253 @@
+#include <iostream>   // Ekrana çıktı ve kullanıcıdan girdi almak için
+#include <fstream>    // Dosya işlemleri (okuma/yazma) için
+#include <cstring>    // C tarzı string işlemleri (strcpy, strcmp) için
+
+using namespace std;
+
+// Sabit tanımlar
+const int MAKS_ODALAR = 5;               // Oteldeki maksimum oda sayısı
+const int MAKS_REZERVASYON = 20;         // Maksimum rezervasyon sayısı
+const int ILK_REZERVASYON_NO = 1000;     // Başlangıç rezervasyon numarası
+
+// Oda bilgisini tutan yapı
+struct Oda {
+    int numara;         // Oda numarası
+    char tur[20];       // Oda türü (örneğin: TekKisilik, CiftKisilik)
+    int dolu;           // Oda dolu mu? 0 = boş, 1 = dolu
+};
+
+// Rezervasyon bilgisini tutan yapı
+struct Rezervasyon {
+    int rezervasyonNo;      // Rezervasyon numarası
+    char musteriAdi[50];    // Müşteri adı
+    int odaNumarasi;        // Hangi odaya rezervasyon yapıldı
+};
+
+// Global diziler (bellekte sabit büyüklükte veri tutar)
+Oda odalar[MAKS_ODALAR];                           // Oda listesi
+Rezervasyon rezervasyonlar[MAKS_REZERVASYON];      // Rezervasyon listesi
+int toplamRezervasyon = 0;                         // Şu ana kadar yapılan toplam rezervasyon sayısı
+
+// Kullanıcı hatalı giriş yaptığında girdi akışını temizler
+void temizleGirdi() {
+    cin.clear();
+    cin.ignore(10000, '\n');
+}
+
+// Ana menü arayüzünü gösterir
+void menuGoster() {
+    cout << "\n=== Otel Rezervasyon Sistemi ===\n";
+    cout << "1. Odaları Göster\n";
+    cout << "2. Oda Rezerve Et\n";
+    cout << "3. Rezervasyonumu Göster\n";
+    cout << "4. Çıkış\n";
+    cout << "Seçiminizi girin: ";
+}
+
+// Oda doluluk durumunu yazdırır
+void odaDurumYaz(int dolu) {
+    if (dolu == 1) {
+        cout << "Dolu" << endl;
+    } else {
+        cout << "Boş" << endl;
+    }
+}
+
+// Odaların listesini yazdırır
+void odalariGoster() {
+    cout << "\nMevcut Odalar:\n";
+    cout << "----------------\n";
+    for (int i = 0; i < MAKS_ODALAR; i++) {
+        cout << "Oda No: " << odalar[i].numara << "\n";
+        cout << "Tür: " << odalar[i].tur << "\n";
+        cout << "Durum: ";
+        odaDurumYaz(odalar[i].dolu);
+        cout << "----------------\n";
+    }
+}
+
+// Kullanıcının oda rezerve etmesini sağlar
+void odaRezerveEt() {
+    if (toplamRezervasyon >= MAKS_REZERVASYON) {
+        cout << "Maksimum rezervasyon sayısına ulaşıldı.\n";
+        return;
+    }
+
+    odalariGoster();  // Önce mevcut odaları göster
+
+    int secilenOda;
+    cout << "Rezerve etmek istediğiniz oda numarasını girin: ";
+    cin >> secilenOda;
+
+    // Geçersiz giriş kontrolü
+    if (cin.fail()) {
+        temizleGirdi();
+        cout << "Hatalı giriş!\n";
+        return;
+    }
+
+    bool bulundu = false;
+
+    // Oda numarasını odalar dizisinde arar
+    for (int i = 0; i < MAKS_ODALAR; i++) {
+        if (odalar[i].numara == secilenOda) {
+            bulundu = true;
+            if (odalar[i].dolu == 0) {
+                temizleGirdi();  // Önceki cin işlemini temizle
+
+                // Müşteri adı al
+                cout << "Müşteri adını girin: ";
+                cin.getline(rezervasyonlar[toplamRezervasyon].musteriAdi, 50);
+
+                // Rezervasyon bilgilerini ata
+                rezervasyonlar[toplamRezervasyon].rezervasyonNo = ILK_REZERVASYON_NO + toplamRezervasyon + 1;
+                rezervasyonlar[toplamRezervasyon].odaNumarasi = secilenOda;
+
+                // Oda artık dolu
+                odalar[i].dolu = 1;
+
+                // Rezervasyon başarı mesajı
+                cout << "Rezervasyon başarıyla yapıldı.\n"
+                     << "Rezervasyon Numaranız: " << rezervasyonlar[toplamRezervasyon].rezervasyonNo << endl;
+
+                // Toplam rezervasyonu bir artır
+                toplamRezervasyon++;
+            } else {
+                cout << "Seçilen oda doludur.\n";
+            }
+            break;
+        }
+    }
+
+    // Oda bulunamadıysa bilgi ver
+    if (!bulundu) {
+        cout << "Oda bulunamadı.\n";
+    }
+}
+
+// Rezervasyon bilgilerini göster
+void rezervasyonGoster() {
+    int no;
+    cout << "Rezervasyon numaranızı girin: ";
+    cin >> no;
+
+    // Geçersiz giriş kontrolü
+    if (cin.fail()) {
+        temizleGirdi();
+        cout << "Hatalı giriş!\n";
+        return;
+    }
+
+    // Rezervasyon numarasına göre rezervasyon bilgisini bulur
+    for (int i = 0; i < toplamRezervasyon; i++) {
+        if (rezervasyonlar[i].rezervasyonNo == no) {
+            Rezervasyon* ptr = &rezervasyonlar[i];
+
+            cout << "\n--- Rezervasyon Bilgisi ---\n";
+            cout << "Rezervasyon No: " << ptr->rezervasyonNo << "\n";
+            cout << "Müşteri Adı: " << ptr->musteriAdi << "\n";
+            cout << "Oda No: " << ptr->odaNumarasi << "\n";
+            return;
+        }
+    }
+
+    // Rezervasyon bulunamadıysa bilgi ver
+    cout << "Rezervasyon bulunamadı.\n";
+}
+
+// Oda bilgilerini dosyaya kaydeder
+void odalariKaydet() {
+    ofstream dosya("odalar.txt");
+    if (dosya) {
+        for (int i = 0; i < MAKS_ODALAR; i++) {
+            dosya << odalar[i].numara << " " << odalar[i].tur << " " << odalar[i].dolu << endl;
+        }
+        dosya.close();
+        cout << "Oda bilgileri kaydedildi.\n";
+    } else {
+        cout << "Oda dosyası açılamadı!\n";
+    }
+}
+
+// Rezervasyon bilgilerini dosyaya kaydeder
+void rezervasyonlariKaydet() {
+    ofstream dosya("rezervasyonlar.txt");
+    if (dosya) {
+        for (int i = 0; i < toplamRezervasyon; i++) {
+            dosya << rezervasyonlar[i].rezervasyonNo << " "
+                  << rezervasyonlar[i].musteriAdi << " "
+                  << rezervasyonlar[i].odaNumarasi << endl;
+        }
+        dosya.close();
+        cout << "Rezervasyonlar kaydedildi.\n";
+    } else {
+        cout << "Rezervasyon dosyası açılamadı!\n";
+    }
+}
+
+// Ana program (program buradan başlar)
+int main() {
+    // Odaları önceden tanımlı şekilde oluştur (C++98 uyumlu)
+    odalar[0].numara = 101;
+    strcpy(odalar[0].tur, "TekKisilik");
+    odalar[0].dolu = 0;
+
+    odalar[1].numara = 102;
+    strcpy(odalar[1].tur, "CiftKisilik");
+    odalar[1].dolu = 0;
+
+    odalar[2].numara = 103;
+    strcpy(odalar[2].tur, "Suit");
+    odalar[2].dolu = 0;
+
+    odalar[3].numara = 104;
+    strcpy(odalar[3].tur, "TekKisilik");
+    odalar[3].dolu = 0;
+
+    odalar[4].numara = 105;
+    strcpy(odalar[4].tur, "CiftKisilik");
+    odalar[4].dolu = 0;
+
+    int secim = 0;
+
+    // Ana menü döngüsü
+    while (true) {
+        menuGoster();
+        cin >> secim;
+
+        // Hatalı giriş kontrolü
+        if (cin.fail()) {
+            temizleGirdi();
+            cout << "Hatalı seçim!\n";
+            continue;
+        }
+
+        // Çıkış işlemi
+        if (secim == 4) {
+            cout << "Çıkılıyor...\n";
+            odalariKaydet();
+            rezervasyonlariKaydet();
+            break;
+        }
+
+        // Kullanıcının seçimine göre işlem yapılır
+        switch (secim) {
+            case 1:
+                odalariGoster();
+                break;
+            case 2:
+                odaRezerveEt();
+                break;
+            case 3:
+                rezervasyonGoster();
+                break;
+            default:
+                cout << "Geçersiz seçim!\n";
+        }
+    }
+
+    return 0;
+}
+
+
+
