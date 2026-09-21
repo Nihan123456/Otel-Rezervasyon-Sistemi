@@ -101,12 +101,14 @@ Buradaki 0 odanın boş, 1 ise dolu olduğunu belirtir.
 Projeyi çalıştırmak için bir C++ derleyicisine ihtiyaç vardır.
 
 📁 Proje Yapısı
+
 otel-rezervasyon-sistemi/
 │
 ├── main.cpp
 ├── README.md
 ├── odalar.txt
 └── rezervasyonlar.txt
+
 odalar.txt ve rezervasyonlar.txt program çalıştıktan sonra otomatik olarak oluşturulabilir.
 
 🎯 Projenin Amacı
